@@ -13,6 +13,8 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 
+import java.util.HashMap;
+import java.util.Map;
 import static java.lang.String.*;
 
 public class ConnectionContext {
@@ -31,6 +33,7 @@ public class ConnectionContext {
 
     private TlsContext tlsCtx;
     private WebSocketContext wsCtx;
+    private Map<String, Object> extend = new HashMap<>();
 
     public ConnectionContext(NitmProxyMaster master) {
         this.master = master;
@@ -38,6 +41,10 @@ public class ConnectionContext {
         this.tlsCtx = new TlsContext();
         this.wsCtx = new WebSocketContext();
         this.listener = master.listenerProvider().create();
+    }
+
+    public Map<String, Object> getExtend() {
+        return extend;
     }
 
     public ConnectionContext withClientAddr(Address clientAddr) {

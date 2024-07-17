@@ -24,6 +24,7 @@ import io.netty.handler.codec.socksx.v5.Socks5CommandStatus;
 import io.netty.handler.codec.socksx.v5.Socks5CommandType;
 import io.netty.handler.codec.socksx.v5.Socks5InitialRequest;
 import io.netty.handler.codec.socksx.v5.Socks5PasswordAuthRequest;
+import io.netty.handler.codec.socksx.v5.Socks5PasswordAuthRequestDecoder;
 import io.netty.handler.codec.socksx.v5.Socks5PasswordAuthStatus;
 import io.netty.handler.codec.socksx.v5.Socks5ServerEncoder;
 import org.slf4j.Logger;
@@ -79,9 +80,16 @@ public class SocksProxyHandler extends SimpleChannelInboundHandler<SocksMessage>
             case SOCKS5:
                 if (socksMessage instanceof Socks5InitialRequest) {
                     ctx.pipeline().addFirst(addChannelHandler(new Socks5CommandRequestDecoder()));
-                    ctx.writeAndFlush(new DefaultSocks5InitialResponse(Socks5AuthMethod.NO_AUTH));
+                    if (((Socks5InitialRequest) socksMessage).authMethods().contains(Socks5AuthMethod.PASSWORD)) {
+                        ctx.pipeline().addFirst(addChannelHandler(new Socks5PasswordAuthRequestDecoder()));
+                        ctx.writeAndFlush(new DefaultSocks5InitialResponse(Socks5AuthMethod.PASSWORD));
+                    } else {
+                        ctx.writeAndFlush(new DefaultSocks5InitialResponse(Socks5AuthMethod.NO_AUTH));
+                    }
                 } else if (socksMessage instanceof Socks5PasswordAuthRequest) {
                     ctx.pipeline().addFirst(addChannelHandler(new Socks5CommandRequestDecoder()));
+                    connectionContext.getExtend().put("username", ((Socks5PasswordAuthRequest) socksMessage).username());
+                    connectionContext.getExtend().put("password", ((Socks5PasswordAuthRequest) socksMessage).password());
                     ctx.writeAndFlush(new DefaultSocks5PasswordAuthResponse(Socks5PasswordAuthStatus.SUCCESS));
                 } else if (socksMessage instanceof Socks5CommandRequest) {
                     Socks5CommandRequest socks5CmdRequest = (Socks5CommandRequest) socksMessage;
